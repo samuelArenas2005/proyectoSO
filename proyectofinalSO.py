@@ -9,10 +9,11 @@ class process:
         self.waitTime = 0
         self.completionTime = 0
         self.turnaroundTime = 0
+        self.responseTime = 0
 
     def setWaitTime (self,time):
         self.waitTime += time
-
+        
     def setCompletionTime (self):
         self.completionTime = self.arrivalTime + self.burstTime + self.waitTime
 
@@ -31,6 +32,8 @@ class sheduler:
             process.setWaitTime(self.actualTime-process.arrivalTime)
             process.setCompletionTime()
             process.setTurnaroundTime()
+            process.responseTime = self.actualTime
+
             self.actualTime += process.burstTime
 
     def sjf(self):
@@ -50,8 +53,10 @@ class sheduler:
             actual.setWaitTime(self.actualTime - actual.arrivalTime)
             actual.setCompletionTime()
             actual.setTurnaroundTime()
+            actual.responseTime = self.actualTime
 
             self.actualTime = actual.completionTime
+            
             ejecutados.append(actual)
 
         self.processes = sorted(ejecutados, key=lambda p: p.pid)
@@ -77,10 +82,10 @@ class sheduler:
 
     def showInfoProcesses(self):
         print("INFO PROCESSES\n")
-        print("|PID|ARRIVAL|BURST|WAIT|COMPLETION|TURNAROUND|")
+        print("|PID|ARRIVAL|BURST|WAIT|COMPLETION|TURNAROUND|RESPONSE|")
         for p in self.processes:
             print(f"|{p.pid:^3}|{p.arrivalTime:^7}|{p.burstTime:^5}|"
-                  f"{p.waitTime:^5}|{p.completionTime:^10}|{p.turnaroundTime:^10}|")
+                  f"{p.waitTime:^4}|{p.completionTime:^10}|{p.turnaroundTime:^10}|{p.responseTime:^8}|")
             
             
 
@@ -92,6 +97,7 @@ class Infoprocesses:
         self.avarageWaitTime = sum(p.waitTime for p in processes)/len(processes)
         self.avarageCompletionTime = sum(p.completionTime for p in processes)/len(processes)
         self.avarageTurnaroundTime= sum(p.turnaroundTime for p in processes)/len(processes)
+        self.avarageResponseTime = sum(p.responseTime for p in processes)/len(processes)
 
 
 
@@ -136,9 +142,10 @@ chooseAlgorithmManual('sjf',exampleProcesses)
 
 #Creación del Grafico
 
-categorias = ['WT', 'CT', 'TT']
+categorias = ['WT', 'CT', 'TT','RT']
 infoAvarageProcess = Infoprocesses(planificador.processes)
-valores = [infoAvarageProcess.avarageWaitTime,infoAvarageProcess.avarageCompletionTime , infoAvarageProcess.avarageTurnaroundTime]
+valores = [infoAvarageProcess.avarageWaitTime,infoAvarageProcess.avarageCompletionTime , infoAvarageProcess.avarageTurnaroundTime,
+           infoAvarageProcess.avarageResponseTime]
 
 plt.figure()
 plt.bar(categorias, valores)
@@ -170,6 +177,7 @@ times = [p.completionTime   for p in procesos]
 waits = [p.waitTime         for p in procesos]
 comps = [p.completionTime   for p in procesos]
 turns = [p.turnaroundTime   for p in procesos]
+respon = [p.responseTime   for p in procesos]
 total = infoAvarageProcess.totalTime
 
 # 2. Prepara la figura
@@ -179,7 +187,7 @@ ax.set_ylabel("Tiempo de proceso")
 ax.set_title("Evolución de métricas")
 
 # 3. Listas vacías para acumulación
-t_vals, w_vals, c_vals, r_vals = [], [], [], []
+t_vals, w_vals, c_vals, r_vals, re_vals = [], [], [], [],[]
 
 # 4. Bucle de animación
 for i in range(len(times)):
@@ -187,6 +195,7 @@ for i in range(len(times)):
     w_vals.append(waits[i])
     c_vals.append(comps[i])
     r_vals.append(turns[i])
+    re_vals.append(respon[i])
     
     ax.cla()  # limpia el eje
     ax.set_xlim(0, total + 20)
@@ -198,6 +207,7 @@ for i in range(len(times)):
     ax.plot(t_vals, w_vals, marker='o', label='Wait Time')
     ax.plot(t_vals, c_vals, marker='s', linestyle='--', label='Completion Time')
     ax.plot(t_vals, r_vals, marker='^', linestyle=':', label='Turnaround Time')
+    ax.plot(t_vals, re_vals, marker='x', label='Response Time')
     
     # anotaciones de valores
     for x, y in zip(t_vals, w_vals):
@@ -205,6 +215,8 @@ for i in range(len(times)):
     for x, y in zip(t_vals, c_vals):
         ax.text(x, y + 1, f"{y}", ha='center', va='bottom')
     for x, y in zip(t_vals, r_vals):
+        ax.text(x, y + 1, f"{y}", ha='center', va='bottom')
+    for x, y in zip(t_vals, re_vals):
         ax.text(x, y + 1, f"{y}", ha='center', va='bottom')
     
     ax.legend()
