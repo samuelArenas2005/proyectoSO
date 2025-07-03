@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import random
 
-class proceso:
+class process:
     def __init__(self, pid,arrivalTime,bursTime):
         self.pid = pid
         self.arrivalTime = arrivalTime
@@ -26,14 +26,36 @@ class sheduler:
         self.actualTime = 0
 
     def fifo(self):
-        for process in self.processes:
-            process.setWaitTime(self.actualTime)
+        processes = sorted(self.processes, key=lambda p: p.arrivalTime)
+        for process in processes:
+            process.setWaitTime(self.actualTime-process.arrivalTime)
             process.setCompletionTime()
             process.setTurnaroundTime()
             self.actualTime += process.burstTime
 
     def sjf(self):
-        print("Logica aqui")
+        pendientes = sorted(self.processes, key=lambda p: p.arrivalTime)
+        ejecutados = []
+
+        while pendientes:
+            llegados = [p for p in pendientes if p.arrivalTime <= self.actualTime]
+            
+            """if not llegados:
+                self.actualTime = pendientes[0].arrivalTime
+                llegados = [pendientes[0]]"""
+            
+            actual = min(llegados, key=lambda p: p.burstTime)
+            pendientes.remove(actual)
+
+            actual.setWaitTime(self.actualTime - actual.arrivalTime)
+            actual.setCompletionTime()
+            actual.setTurnaroundTime()
+
+            self.actualTime = actual.completionTime
+            ejecutados.append(actual)
+
+        self.processes = sorted(ejecutados, key=lambda p: p.pid)
+           
 
     def stcf(self):
         print("Logica aqui")
@@ -62,7 +84,7 @@ class sheduler:
             
             
 
-class infoProcess:
+class Infoprocesses:
     def __init__(self,processes):
         self.processes = processes
         self.actualTime = 0
@@ -73,17 +95,32 @@ class infoProcess:
 
 
 
-def createProcess(n):
+def createProcessAutomatic(n):
     procesos = []
     for i in range(1,n+1):
         numeroRandom = random.randint(10, 50)
-        procesos.append(proceso(i,0,numeroRandom))
+        procesos.append(process(i,0,numeroRandom))
+    return procesos
+
+def createProcessesManual(datos):
+    procesos = []
+    for i, (arrival, burst) in enumerate(datos, start=1):
+        procesos.append(process(i, arrival, burst))
     return procesos
 
 
-def chooseAlgorithm(algorithm,nProcess):
+
+def chooseAlgorithmAutomatic(algorithm,nProcess):
     global planificador,procesos
-    procesos = createProcess(nProcess)
+    procesos = createProcessAutomatic(nProcess)
+    planificador = sheduler(procesos)
+    metodo = getattr(planificador, algorithm)
+    metodo() 
+    planificador.showInfoProcesses()
+
+def chooseAlgorithmManual(algorithm,processes):
+    global planificador,procesos
+    procesos = createProcessesManual(processes)
     planificador = sheduler(procesos)
     metodo = getattr(planificador, algorithm)
     metodo() 
@@ -91,15 +128,16 @@ def chooseAlgorithm(algorithm,nProcess):
 
 
 
-
 #Solo basta con poner el nombre del algoritmo aca
-chooseAlgorithm('fifo',3)
+exampleProcesses = [(0,5),(2,3),(4,8),(6,2)] #cada tupla es un proceso (arrivalTime,BurstTime)
+
+chooseAlgorithmManual('sjf',exampleProcesses)
 
 
 #Creación del Grafico
 
 categorias = ['WT', 'CT', 'TT']
-infoAvarageProcess = infoProcess(planificador.processes)
+infoAvarageProcess = Infoprocesses(planificador.processes)
 valores = [infoAvarageProcess.avarageWaitTime,infoAvarageProcess.avarageCompletionTime , infoAvarageProcess.avarageTurnaroundTime]
 
 plt.figure()
